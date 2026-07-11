@@ -1,27 +1,46 @@
 import { test, expect } from '@playwright/test';
+import { LoginPage } from '../pages/LoginPage'; // Désormais correct et aligné avec l'export nommé
+import { RegisterPage } from '../pages/RegisterPage';
 
-test('Should register a new user successfully', async ({ page }) => {
-  // 1. Navigate using shorthand and wait only until the network commit
-  await page.goto('/auth/register', { waitUntil: 'commit' });
+test.describe('User Registration', () => {
+  test('should register a new user successfully', async ({ page }) => {
+    // L'instanciation fonctionne correctement
+    const loginPage = new LoginPage(page);
+    const registerPage = new RegisterPage(page);
 
-  // 2. Fill in the profile information
-  await page.locator('[data-test="first-name"]').fill('john');
-  await page.locator('[data-test="last-name"]').fill('doe');
-  
-  // Date of birth formatted as YYYY-MM-DD
-  await page.locator('[data-test="dob"]').fill('1999-05-05');
+    const user = {
+      name: 'Zakaria',
+      email: `zakaria${Date.now()}@example.com`,
+      password: 'Moufid567Img$',
+      firstName: 'Zakaria',
+      lastName: 'Moufid',
+      company: 'Instelc',
+      address1: 'Hay 2',
+      address2: 'Apartment 10',
+      country: 'Canada',
+      state: 'Quebec',
+      city: 'Montreal',
+      zipcode: '3000',
+      mobile: '0688611005',
+      day: '18',
+      month: '12',
+      year: '2011',
+    };
 
-  // 3. Fill in the address and contact details
-  await page.locator('[data-test="country"]').selectOption('AI');
-  await page.locator('[data-test="postal_code"]').fill('300');
-  await page.locator('[data-test="house_number"]').fill('23');
-  await page.locator('[data-test="phone"]').fill('07889233223');
+    // 1. Démarrer l'inscription via LoginPage
+    await loginPage.startSignup(user.name, user.email);
+    await expect(page.getByText('Enter Account Information')).toBeVisible();
 
-  // 4. Fill in login credentials (Email and Password)
-  // TIP: parameters altered slightly to ensure it's a unique fresh user
-  await page.locator('[data-test="email"]').fill('zakaria_test_99@practicesoftwaretesting.com');
-  await page.locator('[data-test="password"]').fill('Moufid567Img$');
+    // 2. Remplir les informations via RegisterPage
+    await registerPage.fillAccountInformation(user.password, user.day, user.month, user.year);
+    await registerPage.fillAddressInformation(user);
+    
+    // 3. Valider la création du compte
+    await registerPage.submitRegistration();
+    await expect(page.getByText('Account Created!')).toBeVisible();
 
-  // 5. Click the registration submit button
-  await page.locator('[data-test="register-submit"]').click();
+    // 4. Finaliser et valider la connexion automatique
+    await registerPage.clickContinue();
+    await expect(page.getByText(`Logged in as ${user.name}`)).toBeVisible();
+  });
 });
