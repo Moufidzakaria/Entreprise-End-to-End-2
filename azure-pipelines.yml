@@ -1,0 +1,49 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  BASE_URL: 'https://automationexercise.com'
+  LOGIN_EMAIL: 'testautomationmoufid@gmail.com'
+  LOGIN_PASSWORD: 'Zakaria2026'
+  CI: 'true'
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.x'
+    displayName: 'Install Node.js environment'
+
+  - script: |
+      npm ci
+    displayName: 'Install npm dependencies packages'
+
+  - script: |
+      npx playwright install --with-deps
+    displayName: 'Fetch browser binaries'
+
+  - script: |
+      npx playwright test
+    env:
+      BASE_URL: $(BASE_URL)
+      LOGIN_EMAIL: $(LOGIN_EMAIL)
+      LOGIN_PASSWORD: $(LOGIN_PASSWORD)
+      CI: $(CI)
+    displayName: 'Execute Playwright end-to-end tests'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/test-results/**/*.xml'
+    condition: always()
+    displayName: 'Publish JUnit XML metrics reports'
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: 'playwright-report'
+      artifact: 'playwright-report'
+      publishLocation: 'pipeline'
+    condition: always()
+    displayName: 'Archive Playwright HTML report output bundles'
