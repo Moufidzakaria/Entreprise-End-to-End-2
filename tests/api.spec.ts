@@ -36,8 +36,8 @@ test.describe('API Testing - Toolshop Backend Validation', () => {
     // Point directly to the API subdomain URL
     const response = await request.post('https://api.practicesoftwaretesting.com/users/login', {
       data: {
-        email: 'invalid-customer@practicesoftwaretesting.com',
-        password: 'wrongpassword123'
+        email: 'customer@practicesoftwaretesting.com',
+        password: process.env.LOGIN_PASSWORD || 'Moufid567Img$'
       }
     });
 
