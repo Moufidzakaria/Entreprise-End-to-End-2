@@ -13,14 +13,20 @@ setup('authenticate', async ({ page }) => {
    }
 
    const loginPage = new LoginPage(page); 
-   await loginPage.navigate();
    
-   // Ensure credentials are correct or loaded from environment variables
-   await loginPage.login('customer@practicesoftwaretesting.com', 'Moufid567Img$');
+   // Hardcoded direct target URL to ensure Azure DevOps/GitHub pipelines don't crash on blank baseURL
+   await page.goto('https://automationexercise.com', { waitUntil: 'domcontentloaded' });
+   
+   // Dynamic credential loading with secure fallbacks for local and cloud agent runs
+   const email = process.env.LOGIN_EMAIL || 'customer@practicesoftwaretesting.com';
+   const password = process.env.LOGIN_PASSWORD || 'Moufid567Img$';
+   
+   // Execute the modular login flow
+   await loginPage.login(email, password);
    
    // Verify successful login by checking the visibility of the Logout link
-   await expect(page.getByRole('link', { name: /Logout/i })).toBeVisible();
+   await expect(page.getByRole('link', { name: /Logout/i })).toBeVisible({ timeout: 10000 });
 
-   // Save storage state (cookies and tokens) to reuse across tests
+   // Save storage state (cookies and tokens) to reuse across tests smoothly
    await page.context().storageState({ path: authFile });
 });
