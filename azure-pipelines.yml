@@ -1,0 +1,44 @@
+trigger:
+  branches:
+    include:
+      - main # Only run tests when changes are pushed to the main branch
+
+pool:
+  vmImage: 'ubuntu-latest' # Run on a hosted Ubuntu Linux agent
+
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '20.x'
+  displayName: 'Install Node.js'
+
+- script: |
+    npm ci
+  displayName: 'Install project dependencies'
+
+- script: |
+    npx playwright install --with-deps
+  displayName: 'Install Playwright browsers and system binaries'
+
+- script: |
+    npx playwright test
+  displayName: 'Execute Playwright end-to-end tests'
+  env:
+    # Map pipeline variables securely (configure these in the Azure DevOps UI)
+    BASE_URL: $(BASE_URL)
+    LOGIN_EMAIL: $(LOGIN_EMAIL)
+    LOGIN_PASSWORD: $(LOGIN_PASSWORD)
+    LOGIN_NAME: $(LOGIN_NAME)
+    DB_HOST: $(DB_HOST)
+    DB_USER: $(DB_USER)
+    DB_PASSWORD: $(DB_PASSWORD)
+    DB_NAME: $(DB_NAME)
+    DB_PORT: $(DB_PORT)
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: 'playwright-report'
+    artifact: 'playwright-report'
+    publishLocation: 'pipeline'
+  displayName: 'Publish Playwright HTML test report'
+  condition: always() # Always upload the execution report even if tests fail
