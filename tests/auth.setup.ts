@@ -13,20 +13,20 @@ setup('authenticate', async ({ page }) => {
 
    const loginPage = new LoginPage(page); 
    
-   // Read target URL dynamically from environment or default to automationexercise
-   const targetUrl = process.env.BASE_URL || 'https://automationexercise.com';
-   await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+   // Hardcoded target URL for the specific platform
+   await page.goto('https://automationexercise.com', { waitUntil: 'domcontentloaded' });
    
-   // Load credentials strictly mapped to the active target architecture
+   // Target site-specific credentials for automationexercise.com
+   // Fallback configuration using a reliable test account if environment variables are blank
    const email = process.env.LOGIN_EMAIL || 'testautomationmoufid@gmail.com'; 
    const password = process.env.LOGIN_PASSWORD || 'Zakaria2026';
    
-   // Execute login flow
+   // Execute modular login sequence
    await loginPage.login(email, password);
    
-   // Confirm successful session injection
+   // Assert successful session initialization by validating visibility of the Logout anchor link
    await expect(page.getByRole('link', { name: /Logout/i })).toBeVisible({ timeout: 15000 });
 
-   // Save validated storage state context
+   // Cache validated storage state context tokens
    await page.context().storageState({ path: authFile });
 });
