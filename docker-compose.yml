@@ -1,0 +1,91 @@
+version: "3.8"
+
+services:
+
+  # 🐘 PostgreSQL Database
+  postgres:
+
+    image: postgres:15
+
+    container_name: playwright-postgres
+
+    environment:
+
+      POSTGRES_USER: end_user
+
+      POSTGRES_PASSWORD: playwright
+
+      POSTGRES_DB: projet
+
+
+    ports:
+
+      - "5432:5432"
+
+
+    healthcheck:
+
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U end_user -d projet"
+        ]
+
+      interval: 10s
+
+      timeout: 5s
+
+      retries: 5
+
+
+    volumes:
+
+      - postgres-data:/var/lib/postgresql/data
+
+
+
+  # 🎭 Playwright Automation Tests
+  playwright-tests:
+
+    build: .
+
+
+    container_name: playwright-runner
+
+
+    depends_on:
+
+      postgres:
+
+        condition: service_healthy
+
+
+    env_file:
+
+      - .env
+
+
+    environment:
+
+      DB_HOST: postgres
+
+      DB_PORT: 5432
+
+      DB_USER: end_user
+
+      DB_PASSWORD: playwright
+
+      DB_NAME: projet
+
+
+    volumes:
+
+      - ./playwright-report:/app/playwright-report
+
+      - ./test-results:/app/test-results
+
+
+
+volumes:
+
+  postgres-data:

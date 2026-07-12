@@ -23,12 +23,11 @@ export class LoginPage {
     this.signupEmailInput = page.locator('form').filter({ hasText: 'Signup' }).getByPlaceholder('Email Address');
     this.signupButton = page.getByRole('button', { name: 'Signup' });
   }
-
-  // Navigation vers la page d'accueil
-  async navigate() {
-    await this.page.goto('/'); 
-  }
-
+// Navigation to the homepage
+async navigate() {
+  // Tell Playwright to proceed as soon as the HTML DOM is loaded, without waiting for ads and images
+  await this.page.goto('/', { waitUntil: 'domcontentloaded' }); 
+}
   // Flux de connexion
   async login(email: string, password: string) {
     await this.signUpLoginLink.click();     

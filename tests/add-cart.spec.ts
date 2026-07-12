@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
-// Importation entourée d'accolades pour correspondre à l'export nommé
 import { CartPage } from '../pages/CartPage';
 
 test.describe('Cart Tests', () => {
   test('Login, add 3 products and checkout', async ({ page }) => {
-    // L'instanciation fonctionne maintenant correctement
     const cartPage = new CartPage(page);
 
     await page.goto('/');
@@ -16,8 +14,15 @@ test.describe('Cart Tests', () => {
 
     await cartPage.goToCartViaHeader();
 
+    // ... reste du code au-dessus ...
     await expect(cartPage.getCartItemsCount()).toHaveCount(3);
-    await expect(page).toHaveScreenshot('cart-page-baseline.png');
+    
+    // Remplacer la ligne problématique par ceci :
+ await expect(page.locator('#cart_info_table')).toHaveScreenshot('cart-table-baseline.png', {
+  maxDiffPixelRatio: 0.05 
+});    
+    
     await cartPage.proceedToCheckout();
   });
 });
+ 

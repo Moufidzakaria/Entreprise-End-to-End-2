@@ -1,4 +1,5 @@
 name: Playwright Tests
+
 on:
   push:
     branches: [ main ]
@@ -9,12 +10,32 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
 
-    - uses: actions/setup-node@v4
+    # 🛠️ Spin up a temporary PostgreSQL container inside GitHub Actions for database validation
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: END-END
+          POSTGRES_PASSWORD: playwright
+          POSTGRES_DB: projet
+        ports:
+          - 5432:5432
+        # Health check to ensure the database service is fully up and running before starting tests
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        node-version: lts/*
+        node-version: 20
         cache: 'npm'
 
     - name: Install dependencies
@@ -25,12 +46,21 @@ jobs:
 
     - name: Run Playwright tests
       env:
-        USER_EMAIL: ${{ secrets.USER_EMAIL }}
-        USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+        # Bind environment variables safely to your repository's GitHub Secrets
+        BASE_URL: ${{ secrets.BASE_URL }}
+        LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL }}
+        LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+        LOGIN_NAME: ${{ secrets.LOGIN_NAME }}
+        DB_HOST: 127.0.0.1 # Using loopback IP to directly map to the pipeline service container above
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_NAME: ${{ secrets.DB_NAME }}
+        DB_PORT: ${{ secrets.DB_PORT }}
       run: npx playwright test
 
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
+    - name: Publish Playwright HTML Report
+      uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }} # Always execute this step and upload the report even if tests fail
       with:
         name: playwright-report
         path: playwright-report/
