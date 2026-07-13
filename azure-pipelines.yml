@@ -5,16 +5,16 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  # Vos variables d'environnement pour le projet
   BASE_URL: 'https://automationexercise.com'
   LOGIN_EMAIL: 'testautomationmoufid@gmail.com'
   LOGIN_PASSWORD: 'Zakaria2026'
   CI: 'true'
+  # Force Playwright à stocker et lire les navigateurs dans le dossier du projet
+  PLAYWRIGHT_BROWSERS_PATH: '$(System.DefaultWorkingDirectory)/.cache/ms-playwright'
 
 steps:
-  # Bloc unique pour verrouiller la version Node 20 et tout exécuter à la suite
   - script: |
-      # 1. Charger NVM (Node Version Manager) et installer Node.js 20
+      # 1. Charger NVM et forcer Node.js 20 dans cette session
       export NVM_DIR="$HOME/.nvm"
       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
       nvm install 20
@@ -27,19 +27,20 @@ steps:
       # 2. Installer les packages du projet
       npm install
 
-      # 3. Installer les navigateurs Playwright et les dépendances Linux (Sudo)
-      sudo ./node_modules/.bin/playwright install --with-deps
+      # 3. Installer les navigateurs au bon endroit sans sudo pour éviter les conflits de droits
+      npx playwright install --with-deps
 
       # 4. Lancer les tests de bout en bout
-      ./node_modules/.bin/playwright test
+      npx playwright test
     env:
       BASE_URL: $(BASE_URL)
       LOGIN_EMAIL: $(LOGIN_EMAIL)
       LOGIN_PASSWORD: $(LOGIN_PASSWORD)
       CI: $(CI)
+      PLAYWRIGHT_BROWSERS_PATH: $(PLAYWRIGHT_BROWSERS_PATH)
     displayName: 'Setup Environment and Run Playwright Tests'
 
-  # Étape de publication des résultats de tests XML (JUnit)
+  # Publication des résultats JUnit XML si générés
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
@@ -47,7 +48,7 @@ steps:
     condition: always()
     displayName: 'Publish JUnit XML metrics reports'
 
-  # Étape d'archivage du rapport HTML complet de Playwright
+  # Archivage du rapport HTML complet
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: 'playwright-report'
