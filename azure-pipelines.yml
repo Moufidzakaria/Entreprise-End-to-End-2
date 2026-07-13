@@ -11,43 +11,33 @@ variables:
   CI: 'true'
 
 steps:
-  # Étape 1 : Télécharge et configure explicitement Node.js v20 dans le sous-système de l'agent
+  # 1. Installation propre de Node.js 20
   - task: NodeTool@1
     inputs:
       versionSpec: '20.x'
-      checkLatest: true
     displayName: 'Install Node.js environment v20'
 
-  # Étape 2 : Installation des packages du projet
-  - task: Bash@3
+  # 2. Installation des dépendances
+  - script: |
+      npm install
     displayName: 'Install npm dependencies packages'
-    inputs:
-      targetType: 'inline'
-      script: |
-        npm install
 
-  # Étape 3 : Récupération des binaires avec privilèges sudo
-  - task: Bash@3
+  # 3. Utilisation du chemin direct pour installer les navigateurs
+  - script: |
+      sudo ./node_modules/.bin/playwright install --with-deps
     displayName: 'Fetch browser binaries'
-    inputs:
-      targetType: 'inline'
-      script: |
-        sudo npx playwright install --with-deps
 
-  # Étape 4 : Exécution robuste des tests de validation E2E
-  - task: Bash@3
-    displayName: 'Execute Playwright end-to-end tests'
-    inputs:
-      targetType: 'inline'
-      script: |
-        npx playwright test
+  # 4. FIX : Exécution en utilisant le binaire local direct pour ignorer le vieux Node global
+  - script: |
+      ./node_modules/.bin/playwright test
     env:
       BASE_URL: $(BASE_URL)
       LOGIN_EMAIL: $(LOGIN_EMAIL)
       LOGIN_PASSWORD: $(LOGIN_PASSWORD)
       CI: $(CI)
+    displayName: 'Execute Playwright end-to-end tests'
 
-  # Étape 5 : Publication des métriques de tests JUnit XML
+  # 5. Publication JUnit
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
@@ -55,7 +45,7 @@ steps:
     condition: always()
     displayName: 'Publish JUnit XML metrics reports'
 
-  # Étape 6 : Archivage des livrables de rapports visuels HTML
+  # 6. Archivage HTML
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: 'playwright-report'
