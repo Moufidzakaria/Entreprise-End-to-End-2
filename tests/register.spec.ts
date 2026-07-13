@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage'; // Désormais correct et aligné avec l'export nommé
 import { RegisterPage } from '../pages/RegisterPage';
-
+// On force ce fichier de test spécifique à ignorer la session globale sauvegardée
+test.use({ storageState: { cookies: [], origins: [] } });
 test.describe('User Registration', () => {
   test('should register a new user successfully', async ({ page }) => {
     // L'instanciation fonctionne correctement
