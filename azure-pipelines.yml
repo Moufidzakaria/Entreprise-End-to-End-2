@@ -5,12 +5,14 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
+  # Variables d'environnement injectées pour l'exécution des tests
   BASE_URL: 'https://automationexercise.com'
   LOGIN_EMAIL: 'testautomationmoufid@gmail.com'
   LOGIN_PASSWORD: 'Zakaria2026'
   CI: 'true'
 
 steps:
+  # Utilisation de NodeTool@1 stable pour supprimer l'avertissement de dépréciation
   - task: 'NodeTool@1'
     inputs:
       versionSource: 'spec'
@@ -22,7 +24,7 @@ steps:
     displayName: 'Install npm dependencies packages'
 
   - script: |
-      npx playwright install --with-deps
+      sudo npx playwright install --with-deps
     displayName: 'Fetch browser binaries'
 
   - script: |
@@ -33,8 +35,8 @@ steps:
       LOGIN_PASSWORD: $(LOGIN_PASSWORD)
       CI: $(CI)
     displayName: 'Execute Playwright end-to-end tests'
-    continueOnError: true # IMPORTANT : Empêche le pipeline de crash si un test est incomplet
 
+  # Aligné exactement sur le dossier généré par le fichier de config Playwright
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
