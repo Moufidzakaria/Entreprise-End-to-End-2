@@ -11,33 +11,33 @@ variables:
   CI: 'true'
 
 steps:
-  # 1. Installation propre de Node.js 20
-  - task: NodeTool@1
-    inputs:
-      versionSpec: '20.x'
-    displayName: 'Install Node.js environment v20'
-
-  # 2. Installation des dépendances
+  # Bloc unique pour verrouiller la version Node 20 du début à la fin
   - script: |
+      # 1. Forcer le chargement de NVM (Node Version Manager) et installer Node 20
+      export NVM_DIR="$HOME/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+      nvm install 20
+      nvm use 20
+      
+      echo "Vérification stricte de la version de Node :"
+      node -v
+
+      # 2. Installer les packages npm
       npm install
-    displayName: 'Install npm dependencies packages'
 
-  # 3. Utilisation du chemin direct pour installer les navigateurs
-  - script: |
+      # 3. Installer les navigateurs Playwright avec leurs dépendances système
       sudo ./node_modules/.bin/playwright install --with-deps
-    displayName: 'Fetch browser binaries'
 
-  # 4. FIX : Exécution en utilisant le binaire local direct pour ignorer le vieux Node global
-  - script: |
+      # 4. Lancer la suite de tests Playwright
       ./node_modules/.bin/playwright test
     env:
       BASE_URL: $(BASE_URL)
       LOGIN_EMAIL: $(LOGIN_EMAIL)
       LOGIN_PASSWORD: $(LOGIN_PASSWORD)
       CI: $(CI)
-    displayName: 'Execute Playwright end-to-end tests'
+    displayName: 'Monolithic Setup and Execute Playwright Tests'
 
-  # 5. Publication JUnit
+  # Publication des rapports JUnit XML
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
@@ -45,7 +45,7 @@ steps:
     condition: always()
     displayName: 'Publish JUnit XML metrics reports'
 
-  # 6. Archivage HTML
+  # Archivage du dossier de rapport visuel HTML
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: 'playwright-report'
