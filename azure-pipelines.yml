@@ -5,39 +5,41 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
+  # Vos variables d'environnement pour le projet
   BASE_URL: 'https://automationexercise.com'
   LOGIN_EMAIL: 'testautomationmoufid@gmail.com'
   LOGIN_PASSWORD: 'Zakaria2026'
   CI: 'true'
 
 steps:
-  # Bloc unique pour verrouiller la version Node 20 du début à la fin
+  # Bloc unique pour verrouiller la version Node 20 et tout exécuter à la suite
   - script: |
-      # 1. Forcer le chargement de NVM (Node Version Manager) et installer Node 20
+      # 1. Charger NVM (Node Version Manager) et installer Node.js 20
       export NVM_DIR="$HOME/.nvm"
       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
       nvm install 20
       nvm use 20
       
-      echo "Vérification stricte de la version de Node :"
+      echo "=== VERIFICATION VERSION NODE ==="
       node -v
+      echo "================================="
 
-      # 2. Installer les packages npm
+      # 2. Installer les packages du projet
       npm install
 
-      # 3. Installer les navigateurs Playwright avec leurs dépendances système
+      # 3. Installer les navigateurs Playwright et les dépendances Linux (Sudo)
       sudo ./node_modules/.bin/playwright install --with-deps
 
-      # 4. Lancer la suite de tests Playwright
+      # 4. Lancer les tests de bout en bout
       ./node_modules/.bin/playwright test
     env:
       BASE_URL: $(BASE_URL)
       LOGIN_EMAIL: $(LOGIN_EMAIL)
       LOGIN_PASSWORD: $(LOGIN_PASSWORD)
       CI: $(CI)
-    displayName: 'Monolithic Setup and Execute Playwright Tests'
+    displayName: 'Setup Environment and Run Playwright Tests'
 
-  # Publication des rapports JUnit XML
+  # Étape de publication des résultats de tests XML (JUnit)
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
@@ -45,7 +47,7 @@ steps:
     condition: always()
     displayName: 'Publish JUnit XML metrics reports'
 
-  # Archivage du dossier de rapport visuel HTML
+  # Étape d'archivage du rapport HTML complet de Playwright
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: 'playwright-report'
