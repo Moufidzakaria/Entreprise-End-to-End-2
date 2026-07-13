@@ -5,14 +5,13 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  # Variables d'environnement injectées pour l'exécution des tests
   BASE_URL: 'https://automationexercise.com'
   LOGIN_EMAIL: 'testautomationmoufid@gmail.com'
   LOGIN_PASSWORD: 'Zakaria2026'
   CI: 'true'
 
 steps:
-  # Étape fondamentale : Force l'installation de Node.js 20 et l'ajoute au PATH global de l'agent
+  # FIX : Cette tâche télécharge Node.js 20 et l'injecte obligatoirement dans le PATH global
   - task: NodeTool@1
     inputs:
       versionSpec: '20.x'
@@ -35,7 +34,6 @@ steps:
       CI: $(CI)
     displayName: 'Execute Playwright end-to-end tests'
 
-  # Publication des rapports XML JUnit
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
@@ -43,7 +41,6 @@ steps:
     condition: always()
     displayName: 'Publish JUnit XML metrics reports'
 
-  # Archivage des rapports d'exécution HTML
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: 'playwright-report'
