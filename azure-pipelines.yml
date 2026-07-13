@@ -12,12 +12,11 @@ variables:
   CI: 'true'
 
 steps:
-  # Utilisation de NodeTool@1 stable pour supprimer l'avertissement de dépréciation
-  - task: 'NodeTool@1'
+  # Étape fondamentale : Force l'installation de Node.js 20 et l'ajoute au PATH global de l'agent
+  - task: NodeTool@1
     inputs:
-      versionSource: 'spec'
       versionSpec: '20.x'
-    displayName: 'Install Node.js environment'
+    displayName: 'Install Node.js environment v20'
 
   - script: |
       npm install
@@ -36,7 +35,7 @@ steps:
       CI: $(CI)
     displayName: 'Execute Playwright end-to-end tests'
 
-  # Aligné exactement sur le dossier généré par le fichier de config Playwright
+  # Publication des rapports XML JUnit
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
@@ -44,6 +43,7 @@ steps:
     condition: always()
     displayName: 'Publish JUnit XML metrics reports'
 
+  # Archivage des rapports d'exécution HTML
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: 'playwright-report'
