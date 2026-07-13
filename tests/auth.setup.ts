@@ -11,30 +11,40 @@ setup('authenticate', async ({ page }) => {
        fs.mkdirSync(dir, { recursive: true });
    }
 
+   // LA SOLUTION RADICALE : Bloquer les pubs et overlays Google avant qu'ils n'arrivent
+   await page.route('**/*', (route) => {
+       const url = route.request().url();
+       if (
+           url.includes('googleads') || 
+           url.includes('doubleclick') || 
+           url.includes('adservice') ||
+           url.includes('fundingchoicesmessages') ||
+           url.includes('pagead')
+       ) {
+           return route.abort(); // Bloque la requête publicitaire
+       }
+       return route.continue();
+   });
+
    const loginPage = new LoginPage(page); 
    
-   // 1. Attendre que le réseau soit totalement calme (évite les injections de pub tardives)
+   // 1. Charger la page de connexion
    const targetUrl = process.env.BASE_URL || 'https://automationexercise.com';
-   await page.goto(targetUrl + '/login', { waitUntil: 'networkidle' });
+   await page.goto(targetUrl + '/login', { waitUntil: 'domcontentloaded' });
    
-   // 2. Gérer la bannière de cookies Google Consent si elle bloque l'écran
-   const consentButton = page.getByRole('button', { name: /Autoriser tout/i });
-   if (await consentButton.isVisible({ timeout: 4000 }).catch(() => false)) {
-       await consentButton.click();
-       // Petite pause pour laisser l'overlay disparaître proprement
-       await page.waitForTimeout(1000);
-   }
-   
-   // 3. Charger les identifiants
+   // Un petit temps d'attente pour s'assurer que le DOM est stable sans pub
+   await page.waitForTimeout(2000);
+
+   // 2. Charger les identifiants
    const email = process.env.LOGIN_EMAIL || 'testautomationmoufid@gmail.com'; 
    const password = process.env.LOGIN_PASSWORD || 'Zakaria2026';
    
-   // 4. Exécuter le login sur une page désormais stable
+   // 3. Exécuter le login (le bouton ne sera plus jamais intercepté par une pub !)
    await loginPage.login(email, password);
    
-   // 5. Valider la connexion réussie
+   // 4. Valider la connexion réussie
    await expect(page.getByRole('link', { name: /Logout/i })).toBeVisible({ timeout: 15000 });
 
-   // 6. Sauvegarder la session
+   // 5. Sauvegarder la session
    await page.context().storageState({ path: authFile });
 });
