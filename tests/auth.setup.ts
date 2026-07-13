@@ -13,20 +13,20 @@ setup('authenticate', async ({ page }) => {
 
    const loginPage = new LoginPage(page); 
    
-   // Hardcoded target URL for the specific platform
-   await page.goto('https://automationexercise.com', { waitUntil: 'domcontentloaded' });
+   // 1. Read targeted domain from cloud environment or use default fallback
+   const targetUrl = process.env.BASE_URL || 'https://automationexercise.com';
+   await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
    
-   // Target site-specific credentials for automationexercise.com
-   // Fallback configuration using a reliable test account if environment variables are blank
+   // 2. Load safe validation credentials injected from active pipeline variables
    const email = process.env.LOGIN_EMAIL || 'testautomationmoufid@gmail.com'; 
    const password = process.env.LOGIN_PASSWORD || 'Zakaria2026';
    
-   // Execute modular login sequence
+   // 3. Trigger authentication submission flow
    await loginPage.login(email, password);
    
-   // Assert successful session initialization by validating visibility of the Logout anchor link
+   // 4. Validate successful session authorization (Extended timeout for slow CI VMs)
    await expect(page.getByRole('link', { name: /Logout/i })).toBeVisible({ timeout: 15000 });
 
-   // Cache validated storage state context tokens
+   // 5. Serialize global session state tokens
    await page.context().storageState({ path: authFile });
 });
