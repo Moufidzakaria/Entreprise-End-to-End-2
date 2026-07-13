@@ -11,29 +11,43 @@ variables:
   CI: 'true'
 
 steps:
-  # FIX : Cette tâche télécharge Node.js 20 et l'injecte obligatoirement dans le PATH global
+  # Étape 1 : Télécharge et configure explicitement Node.js v20 dans le sous-système de l'agent
   - task: NodeTool@1
     inputs:
       versionSpec: '20.x'
+      checkLatest: true
     displayName: 'Install Node.js environment v20'
 
-  - script: |
-      npm install
+  # Étape 2 : Installation des packages du projet
+  - task: Bash@3
     displayName: 'Install npm dependencies packages'
+    inputs:
+      targetType: 'inline'
+      script: |
+        npm install
 
-  - script: |
-      sudo npx playwright install --with-deps
+  # Étape 3 : Récupération des binaires avec privilèges sudo
+  - task: Bash@3
     displayName: 'Fetch browser binaries'
+    inputs:
+      targetType: 'inline'
+      script: |
+        sudo npx playwright install --with-deps
 
-  - script: |
-      npx playwright test
+  # Étape 4 : Exécution robuste des tests de validation E2E
+  - task: Bash@3
+    displayName: 'Execute Playwright end-to-end tests'
+    inputs:
+      targetType: 'inline'
+      script: |
+        npx playwright test
     env:
       BASE_URL: $(BASE_URL)
       LOGIN_EMAIL: $(LOGIN_EMAIL)
       LOGIN_PASSWORD: $(LOGIN_PASSWORD)
       CI: $(CI)
-    displayName: 'Execute Playwright end-to-end tests'
 
+  # Étape 5 : Publication des métriques de tests JUnit XML
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
@@ -41,6 +55,7 @@ steps:
     condition: always()
     displayName: 'Publish JUnit XML metrics reports'
 
+  # Étape 6 : Archivage des livrables de rapports visuels HTML
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: 'playwright-report'
