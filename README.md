@@ -1,88 +1,209 @@
-# Playwright End-to-End & API Automation Test Suite
+# 🚀 Playwright QA Automation Framework
 
-This repository contains a professional automated testing framework built using **Playwright with TypeScript**. It validates both the frontend User Interface (UI) and backend REST API endpoints for the **Practice Software Testing (Toolshop)** platform.
+A modern **QA Automation Framework** built with **Playwright + TypeScript**, featuring End-to-End Testing, API Testing, Authentication, Cookies & Sessions, Docker, and Azure DevOps CI/CD.
 
-The project is fully integrated with **GitHub Actions** for Continuous Integration (CI), executing the complete test suite automatically on every push or pull request.
+## ✨ Features
+
+* ✅ Playwright with TypeScript
+* ✅ End-to-End (E2E) Testing
+* ✅ Login & Registration Testing
+* ✅ API Testing
+* ✅ Cookie & Session Management
+* ✅ Page Object Model (POM)
+* ✅ HTML Test Reports
+* ✅ Screenshots on Failure
+* ✅ Parallel Test Execution
+* ✅ Cross-Browser Testing (Chromium, Firefox, WebKit)
+* ✅ Docker & Docker Compose Support
+* ✅ Azure DevOps CI/CD Pipeline
+* ✅ GitHub Version Control
+* ✅ Clean and Scalable Project Structure
 
 ---
 
-## 🚀 Key Features
-
-* **E-Commerce Flow Automation:** End-to-end testing of authentication, profile updates, interaction with dynamic category dropdowns, and adding items to the shopping cart.
-* **API Testing:** Direct backend validation handling HTTP `GET` and `POST` requests, checking status codes, and inspecting JSON response structures.
-* **Page Object Model (POM) Architecture:** Designed with scalable, reusable selectors and neat abstraction layers.
-* **CI/CD Integration:** Implemented continuous testing using an automated GitHub Actions workflow pipeline.
-* **Robust Locator Strategies:** Prioritizes resilient user-facing locators (`getByRole`, `getByText`) to prevent test flakiness.
-* **Artifact Generation:** Configured to automatically capture screenshots, videos, and trace logs for visual debugging.
-
----
-
-## 📁 Project Structure
+# 📁 Project Structure
 
 ```text
-playwright-ts/
-├── .github/workflows/
-│   └── playwright.yml     # GitHub Actions CI workflow configuration
-├── lib/
-│   └── login.ts           # Page Object Model (POM) implementation
+.
 ├── tests/
-│   ├── api.spec.ts        # Isolated REST API validation tests
-│   ├── categories.spec.ts # Dynamic UI workflow & cart management tests
-│   ├── login.spec.ts      # Admin dashboard authentication scenarios
-│   └── register.spec.ts   # New user registration test cases
-├── playwright.config.ts   # Core Playwright configuration file
-└── package.json           # Project dependencies and script shortcuts
-🛠️ Installation & Setup
-Clone the Repository:
+├── pages/
+├── api/
+├── fixtures/
+├── utils/
+├── playwright.config.ts
+├── package.json
+├── Dockerfile
+├── docker-compose.yml
+├── azure-pipelines.yml
+└── README.md
+```
 
-Bash
+---
 
+# 🛠 Tech Stack
 
-git clone [https://github.com/Moufidzakaria/playwright-ts-.git](https://github.com/Moufidzakaria/playwright-ts-.git)
-cd playwright-ts-
-Install Node.js Dependencies:
+* Playwright
+* TypeScript
+* Node.js
+* Docker
+* Docker Compose
+* Azure DevOps Pipelines
+* Git
+* GitHub
 
-Bash
+---
 
+# ⚙️ Installation
+
+```bash
+git clone https://github.com/your-username/your-repository.git
+
+cd your-repository
 
 npm install
-Install Required Playwright Browsers & System Binaries:
+```
 
-Bash
+---
 
+# ▶️ Run Tests
 
-npx playwright install --with-deps
-🏃 Run the Test Suite
-Execute the following commands in your terminal to control and run the test runner:
+Run all tests:
 
-Run all tests in headless mode (Fast CI style):
-
-Bash
-
-
+```bash
 npx playwright test
-Run a specific test file with visible browser UI (Headed):
+```
 
-Bash
+Run Login tests:
 
+```bash
+npx playwright test tests/login.spec.ts
+```
 
-npx playwright test tests/categories.spec.ts --headed
-Run tests using a direct string match/keyword filter:
+Run Register tests:
 
-Bash
+```bash
+npx playwright test tests/register.spec.ts
+```
 
+Run API tests:
 
-npx playwright test categories --headed
-Open the interactive Playwright UI Dashboard:
+```bash
+npx playwright test tests/api
+```
 
-Bash
+Run tests in headed mode:
 
+```bash
+npx playwright test --headed
+```
 
-npx playwright test --ui
-📊 Generating HTML Reports
-Playwright records detailed logs of all test executions. To safely spin up the built-in HTML report server locally on an available port, run:
+---
 
-Bash
+# 📊 Generate HTML Report
 
+```bash
+npx playwright show-report
+```
 
-npx playwright show-report --port 9330
+---
+
+# 🐳 Docker
+
+Build Docker image:
+
+```bash
+docker build -t playwright-tests .
+```
+
+Run Docker container:
+
+```bash
+docker run playwright-tests
+```
+
+Using Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+---
+
+# 🚀 Azure DevOps CI/CD
+
+The project includes an Azure DevOps Pipeline that automatically:
+
+* Install dependencies
+* Install Playwright browsers
+* Execute automated tests
+* Generate HTML reports
+* Publish test artifacts
+
+---
+
+# 🧪 Test Coverage
+
+### UI Testing
+
+* User Login
+* User Registration
+* Logout
+* Authentication
+* Forms Validation
+* Navigation
+
+### API Testing
+
+* GET Requests
+* POST Requests
+* PUT Requests
+* DELETE Requests
+* Response Validation
+* Status Code Validation
+
+### Browser Testing
+
+* Chromium
+* Firefox
+* WebKit
+
+---
+
+# 📈 Reports
+
+The framework automatically generates:
+
+* HTML Report
+* Screenshots on Failure
+* Execution Logs
+
+---
+
+# 📌 Best Practices
+
+* Page Object Model (POM)
+* Reusable Components
+* Clean Code
+* TypeScript Support
+* Maintainable Architecture
+* Fast Execution
+* CI/CD Ready
+
+---
+
+# 👨‍💻 Author
+
+**Zakaria Moufid**
+
+QA Automation Engineer
+
+* LinkedIn: https://www.linkedin.com/in/moufid-zakaria-5294082a1/
+* GitHub: https://github.com/Moufidzakaria
+
+---
+
+# ⭐ If you like this project
+
+Please consider giving it a ⭐ on GitHub.
+
+It helps support the project and motivates future improvements.
