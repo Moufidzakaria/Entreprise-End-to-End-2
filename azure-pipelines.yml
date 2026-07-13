@@ -5,14 +5,17 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
+  # Variables d'environnement injectées pour l'exécution des tests
   BASE_URL: 'https://automationexercise.com'
   LOGIN_EMAIL: 'testautomationmoufid@gmail.com'
   LOGIN_PASSWORD: 'Zakaria2026'
   CI: 'true'
 
 steps:
-  - task: NodeTool@0
+  # Utilisation de NodeTool@1 stable pour supprimer l'avertissement de dépréciation
+  - task: 'NodeTool@1'
     inputs:
+      versionSource: 'spec'
       versionSpec: '20.x'
     displayName: 'Install Node.js environment'
 
@@ -33,10 +36,11 @@ steps:
       CI: $(CI)
     displayName: 'Execute Playwright end-to-end tests'
 
+  # Aligné exactement sur le dossier généré par le fichier de config Playwright
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
-      testResultsFiles: '**/test-results/**/*.xml'
+      testResultsFiles: '**/playwright-report/results.xml'
     condition: always()
     displayName: 'Publish JUnit XML metrics reports'
 

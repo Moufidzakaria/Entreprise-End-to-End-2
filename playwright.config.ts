@@ -2,62 +2,60 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables from local .env file safely
+// Charge le fichier .env local s'il existe (pour votre environnement de dev local)
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 30000, // 30 seconds per test execution ceiling
+  timeout: 60000, // Augmenté à 60s pour donner plus de temps à l'authentification en CI
   maxFailures: 1,
 
-  // Run test files in parallel for extreme speed
+  // Exécution en parallèle pour optimiser la vitesse
   fullyParallel: true,
 
-  // Fail the build on CI if you accidentally left test.only in the source code
+  // Bloque le build sur Azure si un test.only a été oublié
   forbidOnly: !!process.env.CI,
 
-  // Retry twice on CI to handle any network flakiness, 0 retries locally
+  // Tente de rejouer le test jusqu'à 2 fois en cas de coupure réseau sur le Cloud
   retries: process.env.CI ? 2 : 0,
  
-  // Limit workers to 2 on cloud infrastructure to prevent resource throttling
+  // Limite à 2 workers sur l'agent cloud pour éviter de saturer l'infrastructure
   workers: process.env.CI ? 2 : undefined,
 
-  // Highly verbose and structured report outputs
+  // Rapports détaillés et structurés
   reporter: [
     ['html'],
     ['list'],
     ['json', { outputFile: 'playwright-report/results.json' }],
-    ['junit', { outputFile: 'playwright-report/results.xml' }],
+    ['junit', { outputFile: 'playwright-report/results.xml' }], // Utilisé par PublishTestResults@2
   ],
  
-  // Global settings for target test targets
   use: {
-    // Fallback directly to the target environment if process.env.BASE_URL is not provided on the host
+    // Récupère l'URL injectée par le pipeline Azure DevOps
     baseURL: process.env.BASE_URL || 'https://automationexercise.com',
     headless: true,
     screenshot: 'on',
     video: 'on',
-    trace: 'on',
+    trace: 'on', // Enregistre la trace complète pour analyser visuellement les échecs
   },
 
-  /* Execution projects for target runtime configurations */
+  /* Définition des projets d'exécution */
   projects: [
-    // 1. Setup Project: Handle global authentication state setup prior to UI validation
+    // 1. Étape préliminaire : Gère l'authentification globale avant la validation de l'UI
     {
       name: 'setup',
       testMatch: '**/auth.setup.ts',
     },
 
-    // 2. Core Execution Project: Runs tests with pre-baked context credentials
+    // 2. Étape principale : Exécute vos tests d'interface
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Re-use cached session tokens to instantly bypass landing login logic
+        // Utilise la session persistante générée par l'étape setup
         storageState: 'playwright/.auth/user.json',
       },
-      // Block orchestration dependency to force setup success before execution
-      dependencies: ['setup'],
+      dependencies: ['setup'], // Force l'exécution et la réussite du setup d'abord
     },
   ],
 });
