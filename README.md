@@ -156,7 +156,8 @@ provider are not shared with another:
   → Actions**, create repository secrets named `LOGIN_EMAIL` and
   `LOGIN_PASSWORD`, then rerun the workflow.
 * **Azure DevOps:** add `LOGIN_EMAIL` and `LOGIN_PASSWORD` as secret pipeline
-  variables (or in a linked variable group).
+  variables (or in a linked variable group). Without them, the login test is
+  skipped and the independent ZAP job still runs.
 * **Jenkins:** create Secret text credentials with the IDs
   `playwright-login-email` and `playwright-login-password`.
 

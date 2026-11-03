@@ -36,8 +36,8 @@ jobs:
         displayName: Run Playwright tests
         env:
           BASE_URL: $(BASE_URL)
-          LOGIN_EMAIL: $(LOGIN_EMAIL)
-          LOGIN_PASSWORD: $(LOGIN_PASSWORD)
+          LOGIN_EMAIL: $[variables['LOGIN_EMAIL']]
+          LOGIN_PASSWORD: $[variables['LOGIN_PASSWORD']]
           CI: $(CI)
 
       - task: PublishTestResults@2
