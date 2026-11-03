@@ -41,7 +41,7 @@ test.describe('API Testing - Toolshop Backend Validation', () => {
       }
     });
 
-    // Assert that server rejects request with 401 Unauthorized or 422 Unprocessable Entity
-    expect([401, 403, 422]).toContain(response.status());
+    // The test API may lock the account after repeated invalid login attempts.
+    expect([401, 403, 422, 423]).toContain(response.status());
   });
 });
