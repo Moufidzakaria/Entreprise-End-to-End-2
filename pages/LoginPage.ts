@@ -74,11 +74,9 @@ async navigate(): Promise<boolean> {
   // Flux d'initialisation de l'inscription
   async startSignup(name: string, email: string): Promise<boolean> {
     const response = await this.page.goto('/signup', { waitUntil: 'domcontentloaded' });
-    const queueFull = await this.page
-      .getByRole('heading', { name: /under heavy load \(queue full\)/i })
-      .count();
+    const queueFull = this.page.getByRole('heading', { name: /under heavy load \(queue full\)/i });
 
-    if ((response && (response.status() === 429 || response.status() >= 500)) || queueFull > 0) {
+    if ((response && (response.status() === 429 || response.status() >= 500)) || await queueFull.isVisible()) {
       return false;
     }
 
@@ -89,6 +87,9 @@ async navigate(): Promise<boolean> {
     await this.signupNameInput.fill(name);
     await this.signupEmailInput.fill(email);
     await this.signupButton.click();
-    return true;
+
+    const accountInformation = this.page.getByText('Enter Account Information');
+    await expect(accountInformation.or(queueFull)).toBeVisible({ timeout: 15000 });
+    return !(await queueFull.isVisible());
   }
 }

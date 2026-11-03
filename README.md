@@ -190,7 +190,10 @@ pipeline artifacts rather than committed to the repository.
 
 The login test runs only when `LOGIN_EMAIL` and `LOGIN_PASSWORD` are available;
 without them, Playwright reports that test as skipped and continues with the
-other tests and the independent ZAP job. To run the login test, configure these
+other tests and the independent ZAP job. These must be credentials for an
+existing account on the UI test site configured by `BASE_URL`
+(`https://automationexercise.com` by default); credentials for the separate
+Practice Software Testing API are not valid for this UI login. Configure the
 values in the CI provider that runs the workflow; secrets configured in one
 provider are not shared with another:
 
@@ -203,8 +206,8 @@ provider are not shared with another:
 * **Jenkins:** create Secret text credentials with the IDs
   `playwright-login-email` and `playwright-login-password`.
 
-Use credentials for the account on the configured test site. Do not commit
-credentials to pipeline files.
+Do not commit credentials or `.env` files. CI reads credentials only from
+pipeline secrets; local `.env` files are loaded only for non-CI runs.
 
 Some UI and API tests depend on public demo services. If those services return
 HTTP 429 or 5xx, or display their queue-full page, the affected test is reported

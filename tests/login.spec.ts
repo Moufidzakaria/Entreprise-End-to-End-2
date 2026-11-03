@@ -69,7 +69,10 @@ test.describe('User Login Tests', () => {
     }
 
     // 4. Assertion : Vérification de la réussite de la connexion
-    await expect(logoutLink).toBeVisible();
-    await expect(page.getByText('Logged in as customer')).toBeVisible();
+    await expect(
+      logoutLink,
+      'Login did not succeed. Configure LOGIN_EMAIL and LOGIN_PASSWORD with a valid account for the configured BASE_URL.',
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/^Logged in as /)).toBeVisible();
   });
 });
