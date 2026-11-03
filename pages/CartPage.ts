@@ -27,17 +27,7 @@ export class CartPage {
   }
 
   async navigateToCart(): Promise<string | undefined> {
-    const response = await this.page.goto('/view_cart', { waitUntil: 'domcontentloaded' });
-    const unavailable = this.getUnavailableReason(response);
-    if (unavailable) {
-      return unavailable;
-    }
-
-    if (await this.queueFullHeading.isVisible()) {
-      return 'The demo shop is displaying its queue-full page.';
-    }
-
-    return undefined;
+    return this.navigateToShopPage('/view_cart');
   }
 
   async clearCart() {
@@ -50,14 +40,9 @@ export class CartPage {
   }
 
   async addTopProductsToCart(count: number): Promise<string | undefined> {
-    const response = await this.page.goto('/', { waitUntil: 'domcontentloaded' });
-    const unavailable = this.getUnavailableReason(response);
+    const unavailable = await this.navigateToShopPage('/');
     if (unavailable) {
       return unavailable;
-    }
-
-    if (await this.queueFullHeading.isVisible()) {
-      return 'The demo shop is displaying its queue-full page.';
     }
 
     await expect(this.productBlocks.first()).toBeVisible();
@@ -122,6 +107,37 @@ export class CartPage {
 
     if (!response.ok()) {
       throw new Error(`Shop page request failed with HTTP ${response.status()}.`);
+    }
+
+    return undefined;
+  }
+
+  private async navigateToShopPage(path: string): Promise<string | undefined> {
+    let response: Response | null;
+    try {
+      response = await this.page.goto(path, { waitUntil: 'domcontentloaded' });
+    } catch (error) {
+      const transientNetworkError =
+        error instanceof Error &&
+        /net::ERR_(NAME_NOT_RESOLVED|INTERNET_DISCONNECTED|CONNECTION_TIMED_OUT|CONNECTION_RESET|ADDRESS_UNREACHABLE|TIMED_OUT)/.test(error.message);
+      if (transientNetworkError) {
+        return 'The public demo shop is unreachable from this test runner.';
+      }
+
+      if (error instanceof Error && /Timeout \d+ms exceeded/.test(error.message)) {
+        return 'The public demo shop did not respond before the navigation timed out.';
+      }
+
+      throw error;
+    }
+
+    const unavailable = this.getUnavailableReason(response);
+    if (unavailable) {
+      return unavailable;
+    }
+
+    if (await this.queueFullHeading.isVisible()) {
+      return 'The demo shop is displaying its queue-full page.';
     }
 
     return undefined;

@@ -13,7 +13,7 @@ A modern **QA Automation Framework** built with **Playwright + TypeScript**, fea
 * ✅ HTML Test Reports
 * ✅ Screenshots on Failure
 * ✅ Parallel Test Execution
-* ✅ Cross-Browser Testing (Chromium, Firefox, WebKit)
+* ✅ Chromium Testing in CI
 * ✅ Docker & Docker Compose Support
 * ✅ Azure DevOps CI/CD Pipeline
 * ✅ GitHub Version Control
@@ -27,12 +27,14 @@ A modern **QA Automation Framework** built with **Playwright + TypeScript**, fea
 .
 ├── tests/
 ├── pages/
-├── api/
-├── fixtures/
 ├── utils/
+├── security/
+├── .github/workflows/
 ├── playwright.config.ts
 ├── package.json
+├── package-lock.json
 ├── Dockerfile
+├── .dockerignore
 ├── docker-compose.yml
 ├── azure-pipelines.yml
 └── README.md
@@ -60,7 +62,7 @@ git clone https://github.com/your-username/your-repository.git
 
 cd your-repository
 
-npm install
+npm ci
 ```
 
 ---
@@ -70,7 +72,13 @@ npm install
 Run all tests:
 
 ```bash
-npx playwright test
+npm test
+```
+
+Run the same suite in CI mode:
+
+```bash
+npm run test:ci
 ```
 
 Run Login tests:
@@ -85,10 +93,16 @@ Run Register tests:
 npx playwright test tests/register.spec.ts
 ```
 
+Run UI end-to-end tests:
+
+```bash
+npm run test:e2e
+```
+
 Run API tests:
 
 ```bash
-npx playwright test tests/api
+npm run test:api
 ```
 
 Run tests in headed mode:
