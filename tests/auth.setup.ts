@@ -6,6 +6,12 @@ import path from 'path';
 const authFile = 'playwright/.auth/user.json';
 
 setup('authenticate', async ({ page }) => {
+   const email = process.env.LOGIN_EMAIL;
+   const password = process.env.LOGIN_PASSWORD;
+   if (!email || !password) {
+       throw new Error('LOGIN_EMAIL and LOGIN_PASSWORD must be configured before running authentication tests.');
+   }
+
    const dir = path.dirname(authFile);
    if (!fs.existsSync(dir)){
        fs.mkdirSync(dir, { recursive: true });
@@ -33,17 +39,13 @@ setup('authenticate', async ({ page }) => {
    await page.goto(targetUrl + '/login', { waitUntil: 'domcontentloaded' });
    await page.waitForTimeout(1000);
 
-   // 2. Récupérer les identifiants
-   const email = process.env.LOGIN_EMAIL || 'testautomationmoufid@gmail.com'; 
-   const password = process.env.LOGIN_PASSWORD || 'Zakaria2026';
-   
-   // 3. Soumettre les identifiants
+   // 2. Soumettre les identifiants
    await loginPage.login(email, password);
    
-   // 4. Forcer une redirection vers la page d'accueil pour valider le cookie de session
+   // 3. Forcer une redirection vers la page d'accueil pour valider le cookie de session
    await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
 
-   // 5. Validation alternative : on vérifie si l'URL est correcte ou si l'un des deux éléments (Logout ou l'état connecté) est visible
+   // 4. Validation alternative : on vérifie si l'URL est correcte ou si l'un des deux éléments (Logout ou l'état connecté) est visible
    await page.waitForTimeout(2000);
    const currentUrl = page.url();
    console.log(`=== URL ACTUELLE APRES LOGIN : ${currentUrl} ===`);
@@ -60,6 +62,6 @@ setup('authenticate', async ({ page }) => {
    // Assertion finale tolérante
    await expect(page).not.toHaveURL(/.*\/login/, { timeout: 15000 });
 
-   // 6. Sauvegarder la session
+   // 5. Sauvegarder la session
    await page.context().storageState({ path: authFile });
 });

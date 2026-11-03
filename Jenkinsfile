@@ -7,8 +7,8 @@ pipeline {
 
     environment {
         BASE_URL                 = 'https://automationexercise.com'
-        LOGIN_EMAIL              = 'testautomationmoufid@gmail.com'
-        LOGIN_PASSWORD           = 'Zakaria2026'
+        LOGIN_EMAIL              = credentials('playwright-login-email')
+        LOGIN_PASSWORD           = credentials('playwright-login-password')
         CI                       = 'true'
         // Isole le chemin des navigateurs pour éviter les blocages de droits système
         PLAYWRIGHT_BROWSERS_PATH = "${WORKSPACE}/.cache/ms-playwright"

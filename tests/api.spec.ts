@@ -37,7 +37,7 @@ test.describe('API Testing - Toolshop Backend Validation', () => {
     const response = await request.post('https://api.practicesoftwaretesting.com/users/login', {
       data: {
         email: 'customer@practicesoftwaretesting.com',
-        password: process.env.LOGIN_PASSWORD || 'Moufid567Img$'
+        password: 'invalid-password-for-security-test'
       }
     });
 

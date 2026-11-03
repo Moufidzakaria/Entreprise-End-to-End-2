@@ -1,8 +1,12 @@
 
 # Playwright
 node_modules/
+.env
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+/security/reports/zap-report.html
+/security/reports/zap-report.json
+/security/reports/zap_out.json

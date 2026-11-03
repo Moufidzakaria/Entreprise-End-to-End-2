@@ -135,9 +135,29 @@ The project includes an Azure DevOps Pipeline that automatically:
 
 * Install dependencies
 * Install Playwright browsers
-* Execute automated tests
-* Generate HTML reports
-* Publish test artifacts
+* Run Playwright tests and publish JUnit/HTML reports
+* Run the OWASP ZAP passive scan defined in [`security/zap.yaml`](./security/zap.yaml) against a temporary local OWASP Juice Shop container
+* Publish the ZAP HTML and JSON reports as the `zap-security-report` artifact
+
+The ZAP job scans only the local Juice Shop container; it does not scan
+`BASE_URL` or any external website. Medium, low, and informational alerts are
+reported; high or critical alerts fail the security job. The Playwright and
+ZAP jobs run independently. This pipeline runs CI checks and does not deploy
+the test framework to Azure. Generated reports are published as pipeline
+artifacts rather than committed to the repository.
+
+Configure `LOGIN_EMAIL` and `LOGIN_PASSWORD` as secret variables in Azure
+Pipelines before running the authentication tests. In Jenkins, create two
+Secret text credentials with the IDs `playwright-login-email` and
+`playwright-login-password`. Do not commit credentials to pipeline files.
+
+For local runs, set both environment variables before starting the tests:
+
+```bash
+export LOGIN_EMAIL="your-test-account-email"
+export LOGIN_PASSWORD="your-test-account-password"
+npx playwright test
+```
 
 ---
 

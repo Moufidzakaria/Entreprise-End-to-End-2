@@ -1,58 +1,150 @@
 trigger:
-  - main
+  branches:
+    include:
+      - main
 
-pool:
-  vmImage: 'ubuntu-latest'
+pr:
+  branches:
+    include:
+      - main
 
 variables:
   BASE_URL: 'https://automationexercise.com'
-  LOGIN_EMAIL: 'testautomationmoufid@gmail.com'
-  LOGIN_PASSWORD: 'Zakaria2026'
   CI: 'true'
-  # Force Playwright à stocker et lire les navigateurs dans le dossier du projet
-  PLAYWRIGHT_BROWSERS_PATH: '$(System.DefaultWorkingDirectory)/.cache/ms-playwright'
+  NODE_VERSION: '20.x'
 
-steps:
-  - script: |
-      # 1. Charger NVM et forcer Node.js 20 dans cette session
-      export NVM_DIR="$HOME/.nvm"
-      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-      nvm install 20
-      nvm use 20
-      
-      echo "=== VERIFICATION VERSION NODE ==="
-      node -v
-      echo "================================="
+jobs:
+  - job: Playwright
+    displayName: Playwright tests
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - checkout: self
 
-      # 2. Installer les packages du projet
-      npm install
+      - task: UseNode@1
+        displayName: Use Node.js $(NODE_VERSION)
+        inputs:
+          version: $(NODE_VERSION)
 
-      # 3. Installer les navigateurs au bon endroit sans sudo pour éviter les conflits de droits
-      npx playwright install --with-deps
+      - script: npm ci
+        displayName: Install dependencies
 
-      # 4. Lancer les tests de bout en bout
-      npx playwright test
-    env:
-      BASE_URL: $(BASE_URL)
-      LOGIN_EMAIL: $(LOGIN_EMAIL)
-      LOGIN_PASSWORD: $(LOGIN_PASSWORD)
-      CI: $(CI)
-      PLAYWRIGHT_BROWSERS_PATH: $(PLAYWRIGHT_BROWSERS_PATH)
-    displayName: 'Setup Environment and Run Playwright Tests'
+      - script: npx playwright install --with-deps chromium
+        displayName: Install Chromium
 
-  # Publication des résultats JUnit XML si générés
-  - task: PublishTestResults@2
-    inputs:
-      testResultsFormat: 'JUnit'
-      testResultsFiles: '**/playwright-report/results.xml'
-    condition: always()
-    displayName: 'Publish JUnit XML metrics reports'
+      - bash: |
+          echo "##vso[task.logissue type=error]Define LOGIN_EMAIL and LOGIN_PASSWORD as secret pipeline variables."
+          exit 1
+        displayName: Validate authentication secrets
+        condition: or(eq(variables['LOGIN_EMAIL'], ''), eq(variables['LOGIN_PASSWORD'], ''))
 
-  # Archivage du rapport HTML complet
-  - task: PublishPipelineArtifact@1
-    inputs:
-      targetPath: 'playwright-report'
-      artifact: 'playwright-report'
-      publishLocation: 'pipeline'
-    condition: always()
-    displayName: 'Archive Playwright HTML report output bundles'
+      - script: npx playwright test
+        displayName: Run Playwright tests
+        condition: and(succeeded(), ne(variables['LOGIN_EMAIL'], ''), ne(variables['LOGIN_PASSWORD'], ''))
+        env:
+          BASE_URL: $(BASE_URL)
+          LOGIN_EMAIL: $(LOGIN_EMAIL)
+          LOGIN_PASSWORD: $(LOGIN_PASSWORD)
+          CI: $(CI)
+
+      - task: PublishTestResults@2
+        displayName: Publish JUnit results
+        condition: always()
+        inputs:
+          testResultsFormat: JUnit
+          testResultsFiles: playwright-report/results.xml
+          failTaskOnMissingResultsFile: false
+
+      - bash: mkdir -p playwright-report
+        displayName: Ensure report directory exists
+        condition: always()
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish Playwright report
+        condition: always()
+        inputs:
+          targetPath: playwright-report
+          artifact: playwright-report
+          publishLocation: pipeline
+
+  - job: OWASP_ZAP
+    displayName: OWASP ZAP baseline scan
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - checkout: self
+
+      - bash: |
+          set -Eeuo pipefail
+
+          report_dir="$(Build.ArtifactStagingDirectory)/zap"
+          mkdir -p "$report_dir"
+          chmod 777 "$report_dir"
+
+          cleanup() {
+            docker rm -f juice-shop >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run --detach --name juice-shop --network host bkimminich/juice-shop:latest
+
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:3000/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            docker logs juice-shop
+            echo "Juice Shop did not become ready on 127.0.0.1:3000."
+            exit 1
+          fi
+
+          cp security/zap.yaml "$report_dir/zap.yaml"
+          docker run --rm --network host \
+            -v "$report_dir:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap.sh -cmd -config proxy.port=18080 -autorun /zap/wrk/zap.yaml
+
+          python3 - "$report_dir/zap-report.json" <<'PY'
+          import json
+          import sys
+
+          report_path = sys.argv[1]
+          with open(report_path, encoding="utf-8") as report_file:
+              report = json.load(report_file)
+
+          findings = [
+              alert
+              for site in report.get("site", [])
+              for alert in site.get("alerts", [])
+          ]
+          high_or_critical = [
+              alert
+              for alert in findings
+              if int(alert.get("riskcode", 0)) >= 3
+              or str(alert.get("riskdesc", "")).lower().startswith(("high", "critical"))
+          ]
+
+          print(f"ZAP reported {len(findings)} alerts.")
+          for alert in high_or_critical:
+              print(
+                  f"BLOCKING: {alert.get('riskdesc', 'High/Critical')} - "
+                  f"{alert.get('alert', 'Unspecified alert')}"
+              )
+
+          if high_or_critical:
+              sys.exit(1)
+          PY
+        displayName: Run passive ZAP scan against local Juice Shop
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish OWASP ZAP reports
+        condition: always()
+        inputs:
+          targetPath: $(Build.ArtifactStagingDirectory)/zap
+          artifact: zap-security-report
+          publishLocation: pipeline
