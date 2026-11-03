@@ -146,10 +146,22 @@ ZAP jobs run independently. This pipeline runs CI checks and does not deploy
 the test framework to Azure. Generated reports are published as pipeline
 artifacts rather than committed to the repository.
 
-Configure `LOGIN_EMAIL` and `LOGIN_PASSWORD` as secret variables in Azure
-Pipelines before running the authentication tests. In Jenkins, create two
-Secret text credentials with the IDs `playwright-login-email` and
-`playwright-login-password`. Do not commit credentials to pipeline files.
+The login test runs only when `LOGIN_EMAIL` and `LOGIN_PASSWORD` are available;
+without them, Playwright reports that test as skipped and continues with the
+other tests and the independent ZAP job. To run the login test, configure these
+values in the CI provider that runs the workflow; secrets configured in one
+provider are not shared with another:
+
+* **GitHub Actions:** open the repository's **Settings → Secrets and variables
+  → Actions**, create repository secrets named `LOGIN_EMAIL` and
+  `LOGIN_PASSWORD`, then rerun the workflow.
+* **Azure DevOps:** add `LOGIN_EMAIL` and `LOGIN_PASSWORD` as secret pipeline
+  variables (or in a linked variable group).
+* **Jenkins:** create Secret text credentials with the IDs
+  `playwright-login-email` and `playwright-login-password`.
+
+Use credentials for the account on the configured test site. Do not commit
+credentials to pipeline files.
 
 For local runs, set both environment variables before starting the tests:
 

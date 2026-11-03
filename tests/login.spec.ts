@@ -31,6 +31,13 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('User Login Tests', () => {
   test('should login successfully with valid credentials', async ({ page }) => {
+    const email = process.env.LOGIN_EMAIL;
+    const password = process.env.LOGIN_PASSWORD;
+    if (!email || !password) {
+      test.skip(true, 'Set LOGIN_EMAIL and LOGIN_PASSWORD to run the login test.');
+      return;
+    }
+
     const loginPage = new LoginPage(page);
 
     // 1. Navigation vers la page d'accueil / login
@@ -50,7 +57,7 @@ test.describe('User Login Tests', () => {
     }
 
     // 3. Exécution du Login
-    await loginPage.login('customer@practicesoftwaretesting.com', 'Moufid567Img$');
+    await loginPage.login(email, password);
 
     // 4. Assertion : Vérification de la réussite de la connexion
     await expect(logoutLink).toBeVisible();

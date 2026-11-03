@@ -46,11 +46,9 @@ jobs:
 
     - name: Run Playwright tests
       env:
-        # Bind environment variables safely to your repository's GitHub Secrets
         BASE_URL: ${{ secrets.BASE_URL }}
         LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL }}
         LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
-        LOGIN_NAME: ${{ secrets.LOGIN_NAME }}
         DB_HOST: 127.0.0.1 # Using loopback IP to directly map to the pipeline service container above
         DB_USER: ${{ secrets.DB_USER }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}

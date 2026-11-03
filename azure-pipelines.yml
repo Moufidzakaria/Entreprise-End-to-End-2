@@ -32,15 +32,8 @@ jobs:
       - script: npx playwright install --with-deps chromium
         displayName: Install Chromium
 
-      - bash: |
-          echo "##vso[task.logissue type=error]Define LOGIN_EMAIL and LOGIN_PASSWORD as secret pipeline variables."
-          exit 1
-        displayName: Validate authentication secrets
-        condition: or(eq(variables['LOGIN_EMAIL'], ''), eq(variables['LOGIN_PASSWORD'], ''))
-
       - script: npx playwright test
         displayName: Run Playwright tests
-        condition: and(succeeded(), ne(variables['LOGIN_EMAIL'], ''), ne(variables['LOGIN_PASSWORD'], ''))
         env:
           BASE_URL: $(BASE_URL)
           LOGIN_EMAIL: $(LOGIN_EMAIL)

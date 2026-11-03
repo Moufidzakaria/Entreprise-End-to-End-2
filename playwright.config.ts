@@ -31,22 +31,11 @@ export default defineConfig({
   },
 
   projects: [
-    /* NOTE : Si votre fichier auth.setup.ts n'est pas prêt, vous pouvez commenter 
-      le bloc 'setup' et la ligne 'dependencies' ci-dessous pour ne pas bloquer le projet.
-    */
-    {
-      name: 'setup',
-      testMatch: '**/auth.setup.ts',
-    },
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Commentez cette ligne si le fichier user.json n'est pas encore généré par le setup
-        // storageState: 'playwright/.auth/user.json', 
       },
-      // Commentez cette ligne si vous voulez tester le reste sans attendre le setup
-      dependencies: ['setup'], 
     },
   ],
 });
