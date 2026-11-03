@@ -39,17 +39,15 @@ test.describe('API Testing - Toolshop Backend Validation', () => {
 
   // Test 2: Validate authentication rejection with wrong credentials via HTTP POST
   test('POST /users/login - Should fail with invalid credentials', async ({ request }) => {
-    // Point directly to the API subdomain URL
     const response = await request.post('https://api.practicesoftwaretesting.com/users/login', {
       data: {
-        email: 'customer@practicesoftwaretesting.com',
+        email: `qa-invalid-${Date.now()}@example.com`,
         password: 'invalid-password-for-security-test'
       }
     });
     skipIfServiceUnavailable(response.status());
 
-    // The test API may lock the account after repeated invalid login attempts.
-    expect([401, 403, 422, 423]).toContain(response.status());
+    expect([401, 403, 422]).toContain(response.status());
   });
 
   test('POST /users/login - Should authenticate with valid credentials', async ({ request }) => {
@@ -64,6 +62,12 @@ test.describe('API Testing - Toolshop Backend Validation', () => {
       data: { email, password },
     });
     skipIfServiceUnavailable(response.status());
+
+    if (response.status() === 423) {
+      throw new Error(
+        'The API returned 423 Locked for API_LOGIN_EMAIL. Use an unlocked Practice Software Testing API account or ask the API owner to unlock it.',
+      );
+    }
 
     expect(
       response.status(),

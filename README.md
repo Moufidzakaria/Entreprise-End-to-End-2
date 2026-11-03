@@ -215,6 +215,10 @@ valid Practice Software Testing API account. A `401 Unauthorized` response
 means the API rejected the submitted credentials; do not treat it as a
 successful login. Without these API secrets, the positive API-login test is
 skipped while the invalid-credentials test continues to verify rejection.
+The invalid-credentials test uses a unique, non-existing email so repeated CI
+runs do not lock a shared demo account. HTTP `423 Locked` on the successful
+login test indicates the configured API account is locked; use an unlocked
+test account before rerunning.
 In Azure DevOps, add `API_LOGIN_EMAIL` and `API_LOGIN_PASSWORD` as secret
 variables under **Pipelines → Edit → Variables** (or in a linked variable
 group). In GitHub Actions, add them under **Settings → Secrets and variables
