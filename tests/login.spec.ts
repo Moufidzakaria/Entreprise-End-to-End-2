@@ -73,6 +73,6 @@ test.describe('User Login Tests', () => {
       logoutLink,
       'Login did not succeed. Configure LOGIN_EMAIL and LOGIN_PASSWORD with a valid account for the configured BASE_URL.',
     ).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/^Logged in as /)).toBeVisible();
+    await expect(page.getByText(/Logged in as customer/)).toBeVisible();
   });
 });
