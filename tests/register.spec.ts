@@ -48,7 +48,11 @@ test.describe('User Registration', () => {
     };
 
     // 1. Démarrer l'inscription via LoginPage
-    await loginPage.startSignup(user.name, user.email);
+    const signupStarted = await loginPage.startSignup(user.name, user.email);
+    if (!signupStarted) {
+      test.skip(true, 'Registration site is temporarily overloaded (HTTP 503 or queue full).');
+      return;
+    }
     
     // Suppression manuelle préventive au cas où l'initialisation a du retard
     await page.evaluate(() => {

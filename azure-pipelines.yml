@@ -62,6 +62,7 @@ jobs:
 
   - job: OWASP_ZAP
     displayName: OWASP ZAP baseline scan
+    dependsOn: []
     pool:
       vmImage: ubuntu-latest
     steps:

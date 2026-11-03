@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 
+function skipIfServiceUnavailable(status: number, endpoint: string): void {
+  if (status === 429 || status >= 500) {
+    test.skip(true, `${endpoint} is temporarily unavailable (HTTP ${status}).`);
+  }
+}
+
 test.describe('API Testing - Full User Lifecycle', () => {
   const baseUrl = 'https://automationexercise.com/api';
 
@@ -29,6 +35,7 @@ test.describe('API Testing - Full User Lifecycle', () => {
       }
     });
 
+    skipIfServiceUnavailable(createResponse.status(), 'Account creation API');
     expect(createResponse.status()).toBe(200);
 
     const createBody = await createResponse.json();
@@ -48,6 +55,7 @@ test.describe('API Testing - Full User Lifecycle', () => {
       }
     );
 
+    skipIfServiceUnavailable(getResponse.status(), 'Account details API');
     expect(getResponse.status()).toBe(200);
 
     const getBody = await getResponse.json();
@@ -77,6 +85,7 @@ test.describe('API Testing - Full User Lifecycle', () => {
       }
     });
 
+    skipIfServiceUnavailable(updateResponse.status(), 'Account update API');
     expect(updateResponse.status()).toBe(200);
 
     const updateBody = await updateResponse.json();
@@ -94,6 +103,7 @@ test.describe('API Testing - Full User Lifecycle', () => {
       }
     });
 
+    skipIfServiceUnavailable(deleteResponse.status(), 'Account deletion API');
     expect(deleteResponse.status()).toBe(200);
 
     const deleteBody = await deleteResponse.json();

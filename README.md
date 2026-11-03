@@ -164,6 +164,11 @@ provider are not shared with another:
 Use credentials for the account on the configured test site. Do not commit
 credentials to pipeline files.
 
+Some UI and API tests depend on public demo services. If those services return
+HTTP 429 or 5xx, or display their queue-full page, the affected test is reported
+as skipped rather than timing out; inspect the Playwright report and rerun when
+the service is available.
+
 For local runs, set both environment variables before starting the tests:
 
 ```bash

@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 
 // Correction : Utilisation d'un export nommé au lieu d'un export par défaut
 export class LoginPage {
@@ -24,23 +24,71 @@ export class LoginPage {
     this.signupButton = page.getByRole('button', { name: 'Signup' });
   }
 // Navigation to the homepage
-async navigate() {
-  // Tell Playwright to proceed as soon as the HTML DOM is loaded, without waiting for ads and images
-  await this.page.goto('/', { waitUntil: 'domcontentloaded' }); 
+async navigate(): Promise<boolean> {
+  const response = await this.page.goto('/', { waitUntil: 'domcontentloaded' });
+  const queueFull = this.page.getByRole('heading', { name: /under heavy load \(queue full\)/i });
+
+  if ((response && (response.status() === 429 || response.status() >= 500)) || await queueFull.isVisible()) {
+    return false;
+  }
+
+  if (!response?.ok()) {
+    throw new Error(`Homepage request failed with HTTP ${response?.status() ?? 'no response'}.`);
+  }
+
+  return true;
 }
   // Flux de connexion
-  async login(email: string, password: string) {
-    await this.signUpLoginLink.click();     
+  async login(email: string, password: string): Promise<boolean> {
+    const loginResponsePromise = this.page.waitForResponse(
+      response => response.request().isNavigationRequest() && new URL(response.url()).pathname === '/login',
+      { timeout: 15000 }
+    ).catch(() => null);
+
+    await this.signUpLoginLink.click();
+    const loginResponse = await loginResponsePromise;
+    const queueFull = this.page.getByRole('heading', { name: /under heavy load \(queue full\)/i });
+
+    if (
+      (loginResponse && (loginResponse.status() === 429 || loginResponse.status() >= 500)) ||
+      await queueFull.isVisible()
+    ) {
+      return false;
+    }
+
+    if (loginResponse && !loginResponse.ok()) {
+      throw new Error(`Login page request failed with HTTP ${loginResponse.status()}.`);
+    }
+
+    await expect(this.loginEmailInput.or(queueFull)).toBeVisible({ timeout: 15000 });
+    if (await queueFull.isVisible()) {
+      return false;
+    }
+
     await this.loginEmailInput.fill(email);   
     await this.loginPasswordInput.fill(password); 
     await this.loginButton.click();         
+    return true;
   }
 
   // Flux d'initialisation de l'inscription
-  async startSignup(name: string, email: string) {
-    await this.page.goto('/signup');
+  async startSignup(name: string, email: string): Promise<boolean> {
+    const response = await this.page.goto('/signup', { waitUntil: 'domcontentloaded' });
+    const queueFull = await this.page
+      .getByRole('heading', { name: /under heavy load \(queue full\)/i })
+      .count();
+
+    if ((response && (response.status() === 429 || response.status() >= 500)) || queueFull > 0) {
+      return false;
+    }
+
+    if (!response?.ok()) {
+      throw new Error(`Signup page request failed with HTTP ${response?.status() ?? 'no response'}.`);
+    }
+
     await this.signupNameInput.fill(name);
     await this.signupEmailInput.fill(email);
     await this.signupButton.click();
+    return true;
   }
 }

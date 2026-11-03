@@ -1,11 +1,17 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('API Testing - Toolshop Backend Validation', () => {
+  function skipIfServiceUnavailable(status: number): void {
+    if (status === 429 || status >= 500) {
+      test.skip(true, `The public demo API is temporarily unavailable (HTTP ${status}).`);
+    }
+  }
 
   // Test 1: Validate fetching the products list via HTTP GET
   test('GET /products - Should return status 200 and list products', async ({ request }) => {
     // Point directly to the API subdomain URL
     const response = await request.get('https://api.practicesoftwaretesting.com/products');
+    skipIfServiceUnavailable(response.status());
     
     // Assert that the HTTP response status code is 200 OK
     expect(response.status()).toBe(200);
@@ -40,6 +46,7 @@ test.describe('API Testing - Toolshop Backend Validation', () => {
         password: 'invalid-password-for-security-test'
       }
     });
+    skipIfServiceUnavailable(response.status());
 
     // The test API may lock the account after repeated invalid login attempts.
     expect([401, 403, 422, 423]).toContain(response.status());
