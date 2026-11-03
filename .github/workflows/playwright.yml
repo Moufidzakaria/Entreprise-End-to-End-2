@@ -5,61 +5,139 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: playwright-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
-
-    # 🛠️ Spin up a temporary PostgreSQL container inside GitHub Actions for database validation
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: END-END
-          POSTGRES_PASSWORD: playwright
-          POSTGRES_DB: projet
-        ports:
-          - 5432:5432
-        # Health check to ensure the database service is fully up and running before starting tests
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
 
-    - name: Run Playwright tests
-      env:
-        BASE_URL: ${{ secrets.BASE_URL }}
-        LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL }}
-        LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
-        DB_HOST: 127.0.0.1 # Using loopback IP to directly map to the pipeline service container above
-        DB_USER: ${{ secrets.DB_USER }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        DB_NAME: ${{ secrets.DB_NAME }}
-        DB_PORT: ${{ secrets.DB_PORT }}
-      run: npx playwright test
+      - name: Run Playwright tests
+        env:
+          BASE_URL: ${{ vars.BASE_URL || 'https://automationexercise.com' }}
+          LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL }}
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+          CI: 'true'
+        run: npx playwright test
 
-    - name: Publish Playwright HTML Report
-      uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }} # Always execute this step and upload the report even if tests fail
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - name: Publish Playwright reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-reports
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 30
+
+  owasp-zap:
+    name: OWASP ZAP passive scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare report directory
+        run: mkdir -p "${{ runner.temp }}/zap-reports"
+
+      - name: Run passive ZAP scan against local Juice Shop
+        id: zap_scan
+        env:
+          ZAP_REPORT_DIR: ${{ runner.temp }}/zap-reports
+        run: |
+          set -Eeuo pipefail
+
+          docker run --detach --name juice-shop --network host bkimminich/juice-shop:latest
+
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:3000/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            docker logs juice-shop
+            echo "Juice Shop did not become ready on 127.0.0.1:3000."
+            exit 1
+          fi
+
+          cp security/zap.yaml "$ZAP_REPORT_DIR/zap.yaml"
+          chmod 777 "$ZAP_REPORT_DIR"
+          docker run --rm --network host \
+            -v "$ZAP_REPORT_DIR:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap.sh -cmd -config proxy.port=18080 -autorun /zap/wrk/zap.yaml
+
+      - name: Fail on high or critical ZAP alerts
+        if: always() && steps.zap_scan.outcome == 'success'
+        env:
+          ZAP_REPORT: ${{ runner.temp }}/zap-reports/zap-report.json
+        run: |
+          python3 - "$ZAP_REPORT" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as report_file:
+              report = json.load(report_file)
+
+          alerts = [
+              alert
+              for site in report.get("site", [])
+              for alert in site.get("alerts", [])
+          ]
+          blocking = [
+              alert
+              for alert in alerts
+              if int(alert.get("riskcode", 0)) >= 3
+              or str(alert.get("riskdesc", "")).lower().startswith(("high", "critical"))
+          ]
+
+          print(f"ZAP reported {len(alerts)} alerts.")
+          for alert in blocking:
+              print(
+                  f"BLOCKING: {alert.get('riskdesc', 'High/Critical')} - "
+                  f"{alert.get('alert', 'Unspecified alert')}"
+              )
+
+          if blocking:
+              sys.exit(1)
+          PY
+
+      - name: Publish OWASP ZAP reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-security-report
+          path: ${{ runner.temp }}/zap-reports/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Stop Juice Shop
+        if: always()
+        run: docker rm --force juice-shop || true

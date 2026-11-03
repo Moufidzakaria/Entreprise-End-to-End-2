@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, Response, expect } from '@playwright/test';
 
 export class CartPage {
   readonly page: Page;
@@ -8,6 +8,7 @@ export class CartPage {
   readonly continueShoppingButton: Locator;
   readonly checkoutButton: Locator;
   readonly productBlocks: Locator;
+  readonly queueFullHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -19,51 +20,131 @@ export class CartPage {
     // Cibler précisément le bouton dans la fenêtre modale
     this.continueShoppingButton = page.locator('.modal-content button:has-text("Continue Shopping")');
     this.checkoutButton = page.getByText('Proceed To Checkout');
+    this.queueFullHeading = page.getByRole('heading', { name: /under heavy load \(queue full\)/i });
     
     // Utiliser la structure de la grille de produits globale
     this.productBlocks = page.locator('.features_items .col-sm-4');
   }
 
-  async navigateToCart() {
-    await this.page.goto('/view_cart');
+  async navigateToCart(): Promise<string | undefined> {
+    const response = await this.page.goto('/view_cart', { waitUntil: 'domcontentloaded' });
+    const unavailable = this.getUnavailableReason(response);
+    if (unavailable) {
+      return unavailable;
+    }
+
+    if (await this.queueFullHeading.isVisible()) {
+      return 'The demo shop is displaying its queue-full page.';
+    }
+
+    return undefined;
   }
 
   async clearCart() {
-    // Attendre que la page soit stable avant de compter
-    await this.page.waitForLoadState('networkidle');
     const count = await this.deleteButtons.count();
     for (let i = 0; i < count; i++) {
       // On clique toujours sur le premier bouton restant
       await this.deleteButtons.first().click();
-      // Petite attente pour laisser le produit disparaître en AJAX
-      await this.page.waitForTimeout(500); 
+      await expect(this.deleteButtons).toHaveCount(count - i - 1);
     }
   }
 
-  async addTopProductsToCart(count: number) {
-    await this.page.goto('/');
+  async addTopProductsToCart(count: number): Promise<string | undefined> {
+    const response = await this.page.goto('/', { waitUntil: 'domcontentloaded' });
+    const unavailable = this.getUnavailableReason(response);
+    if (unavailable) {
+      return unavailable;
+    }
+
+    if (await this.queueFullHeading.isVisible()) {
+      return 'The demo shop is displaying its queue-full page.';
+    }
+
+    await expect(this.productBlocks.first()).toBeVisible();
 
     for (let i = 0; i < count; i++) {
       // Cibler le bloc du i-ème produit dans la liste
       const product = this.productBlocks.nth(i);
-      
+      await expect(product).toBeVisible();
+
       // Cibler le bouton "Add to cart" visible (souvent le premier dans le bloc)
       const addToCartButton = product.locator('.add-to-cart').first();
       
       await product.scrollIntoViewIfNeeded();
-      await addToCartButton.click();
 
-      // MEILLEURE PRATIQUE : Attendre que la modale soit visible avant de cliquer sur Continuer
-      await this.continueShoppingButton.waitFor({ state: 'visible' });
-      await this.continueShoppingButton.click();
-      
-      // Attendre que la modale disparaisse pour ne pas bloquer le clic suivant
-      await this.continueShoppingButton.waitFor({ state: 'hidden' });
+      let failedResponse: Response | undefined;
+      const currentOrigin = new URL(this.page.url()).origin;
+      const captureServiceFailure = (serviceResponse: Response) => {
+        if (
+          new URL(serviceResponse.url()).origin === currentOrigin &&
+          (serviceResponse.status() === 429 || serviceResponse.status() >= 500)
+        ) {
+          failedResponse = serviceResponse;
+        }
+      };
+
+      this.page.on('response', captureServiceFailure);
+      try {
+        await addToCartButton.click();
+
+        await expect.poll(async () =>
+          failedResponse !== undefined ||
+          await this.queueFullHeading.isVisible() ||
+          await this.continueShoppingButton.isVisible(),
+        { timeout: 15000 }).toBe(true);
+
+        if (failedResponse) {
+          return `The demo shop returned HTTP ${failedResponse.status()}.`;
+        }
+
+        if (await this.queueFullHeading.isVisible()) {
+          return 'The demo shop is displaying its queue-full page.';
+        }
+
+        await this.continueShoppingButton.click();
+        await expect(this.continueShoppingButton).toBeHidden();
+      } finally {
+        this.page.off('response', captureServiceFailure);
+      }
     }
+
+    return undefined;
   }
 
-  async goToCartViaHeader() {
+  private getUnavailableReason(response: Response | null): string | undefined {
+    if (!response) {
+      return 'The demo shop did not return a page response.';
+    }
+
+    if (response.status() === 429 || response.status() >= 500) {
+      return `The demo shop returned HTTP ${response.status()}.`;
+    }
+
+    if (!response.ok()) {
+      throw new Error(`Shop page request failed with HTTP ${response.status()}.`);
+    }
+
+    return undefined;
+  }
+
+  async goToCartViaHeader(): Promise<string | undefined> {
+    const responsePromise = this.page.waitForResponse(response =>
+      response.request().isNavigationRequest() &&
+      new URL(response.url()).pathname.replace(/\/$/, '') === '/view_cart',
+    );
     await this.cartLink.click();
+
+    const response = await responsePromise;
+    const unavailable = this.getUnavailableReason(response);
+    if (unavailable) {
+      return unavailable;
+    }
+
+    if (await this.queueFullHeading.isVisible()) {
+      return 'The demo shop is displaying its queue-full page.';
+    }
+
+    return undefined;
   }
 
   getCartItemsCount() {

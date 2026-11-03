@@ -52,12 +52,24 @@ jobs:
         displayName: Ensure report directory exists
         condition: always()
 
+      - bash: mkdir -p test-results
+        displayName: Ensure test results directory exists
+        condition: always()
+
       - task: PublishPipelineArtifact@1
-        displayName: Publish Playwright report
+        displayName: Publish Playwright reports
         condition: always()
         inputs:
           targetPath: playwright-report
           artifact: playwright-report
+          publishLocation: pipeline
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish Playwright failure artifacts
+        condition: always()
+        inputs:
+          targetPath: test-results
+          artifact: playwright-test-results
           publishLocation: pipeline
 
   - job: OWASP_ZAP

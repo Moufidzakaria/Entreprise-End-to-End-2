@@ -129,22 +129,64 @@ docker compose up --build
 
 ---
 
-# 🚀 Azure DevOps CI/CD
+# 🔐 OWASP ZAP Security Scan
 
-The project includes an Azure DevOps Pipeline that automatically:
+GitHub Actions and Azure DevOps run an OWASP ZAP **passive baseline scan**
+against a temporary OWASP Juice Shop container. The scan crawls the local
+training target and checks the observed responses; it does not run active
+attack rules or scan the external `BASE_URL` used by the Playwright tests.
 
-* Install dependencies
-* Install Playwright browsers
-* Run Playwright tests and publish JUnit/HTML reports
-* Run the OWASP ZAP passive scan defined in [`security/zap.yaml`](./security/zap.yaml) against a temporary local OWASP Juice Shop container
-* Publish the ZAP HTML and JSON reports as the `zap-security-report` artifact
+The scan plan is maintained in [`security/zap.yaml`](./security/zap.yaml). Both
+CI providers publish the HTML and JSON reports in a `zap-security-report`
+artifact. Low, medium, and informational alerts are reported; high or critical
+alerts fail the ZAP job. The ZAP job runs independently of the Playwright job.
+
+To run the same scan locally, start the Juice Shop training target:
+
+```bash
+docker run --detach --name juice-shop --network host bkimminich/juice-shop:latest
+```
+
+Wait until `http://127.0.0.1:3000` responds, then run ZAP from the repository
+root:
+
+```bash
+mkdir -p security/reports
+cp security/zap.yaml security/reports/zap.yaml
+docker run --rm --network host \
+  -v "$PWD/security/reports:/zap/wrk/:rw" \
+  ghcr.io/zaproxy/zaproxy:stable \
+  zap.sh -cmd -config proxy.port=18080 -autorun /zap/wrk/zap.yaml
+```
+
+The generated reports are written under `security/reports/`. Stop the local
+training container when finished:
+
+```bash
+docker rm --force juice-shop
+```
+
+Only run security scans against systems you own or are explicitly authorized
+to test. This configuration targets the local Juice Shop container only.
+
+---
+
+# 🚀 CI Pipelines
+
+GitHub Actions ([`.github/workflows/playwright.yml`](./.github/workflows/playwright.yml))
+and Azure DevOps ([`azure-pipelines.yml`](./azure-pipelines.yml)) automatically:
+
+* Install Node.js dependencies and Chromium.
+* Run Playwright tests and publish reports and failure artifacts.
+* Run the OWASP ZAP passive scan defined in [`security/zap.yaml`](./security/zap.yaml) against a temporary local OWASP Juice Shop container.
+* Publish the ZAP HTML and JSON reports as the `zap-security-report` artifact.
 
 The ZAP job scans only the local Juice Shop container; it does not scan
 `BASE_URL` or any external website. Medium, low, and informational alerts are
 reported; high or critical alerts fail the security job. The Playwright and
-ZAP jobs run independently. This pipeline runs CI checks and does not deploy
-the test framework to Azure. Generated reports are published as pipeline
-artifacts rather than committed to the repository.
+ZAP jobs run independently. These pipelines run CI checks; they do not deploy
+the test framework or application to Azure. Generated reports are published as
+pipeline artifacts rather than committed to the repository.
 
 The login test runs only when `LOGIN_EMAIL` and `LOGIN_PASSWORD` are available;
 without them, Playwright reports that test as skipped and continues with the
