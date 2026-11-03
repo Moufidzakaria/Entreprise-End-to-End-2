@@ -51,10 +51,15 @@ test.describe('API Testing - Toolshop Backend Validation', () => {
   });
 
   test('POST /users/login - Should authenticate with valid credentials', async ({ request }) => {
+    if (process.env.RUN_API_LOGIN_TEST !== 'true') {
+      test.skip(true, 'Set RUN_API_LOGIN_TEST=true to run the external API login test.');
+      return;
+    }
+
     const email = process.env.API_LOGIN_EMAIL;
     const password = process.env.API_LOGIN_PASSWORD;
     if (!email || !password) {
-      test.skip(true, 'Set API_LOGIN_EMAIL and API_LOGIN_PASSWORD to test successful API login.');
+      test.skip(true, 'RUN_API_LOGIN_TEST is enabled; configure API_LOGIN_EMAIL and API_LOGIN_PASSWORD.');
       return;
     }
 
@@ -65,13 +70,13 @@ test.describe('API Testing - Toolshop Backend Validation', () => {
 
     if (response.status() === 423) {
       throw new Error(
-        'The API returned 423 Locked for API_LOGIN_EMAIL. Use an unlocked Practice Software Testing API account or ask the API owner to unlock it.',
+        'The API returned HTTP 423 Locked for API_LOGIN_EMAIL. Use an unlocked Practice Software Testing API account or ask the API owner to unlock it.',
       );
     }
 
     expect(
       response.status(),
-      'API login failed. Verify API_LOGIN_EMAIL and API_LOGIN_PASSWORD are valid for Practice Software Testing.',
+      `API login failed with HTTP ${response.status()}. Verify API_LOGIN_EMAIL and API_LOGIN_PASSWORD are valid for Practice Software Testing.`,
     ).toBe(200);
 
     const responseBody = await response.json();

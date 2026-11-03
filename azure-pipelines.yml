@@ -12,6 +12,8 @@ variables:
   BASE_URL: 'https://automationexercise.com'
   CI: 'true'
   NODE_VERSION: '20.x'
+  RUN_UI_LOGIN_TEST: 'false'
+  RUN_API_LOGIN_TEST: 'false'
 
 jobs:
   - job: Playwright
@@ -41,6 +43,8 @@ jobs:
           LOGIN_PASSWORD: $[variables['LOGIN_PASSWORD']]
           API_LOGIN_EMAIL: $[variables['API_LOGIN_EMAIL']]
           API_LOGIN_PASSWORD: $[variables['API_LOGIN_PASSWORD']]
+          RUN_UI_LOGIN_TEST: $(RUN_UI_LOGIN_TEST)
+          RUN_API_LOGIN_TEST: $(RUN_API_LOGIN_TEST)
           CI: $(CI)
 
       - task: PublishTestResults@2

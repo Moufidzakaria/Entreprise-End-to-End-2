@@ -31,10 +31,15 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('User Login Tests', () => {
   test('should login successfully with valid credentials', async ({ page }) => {
+    if (process.env.RUN_UI_LOGIN_TEST !== 'true') {
+      test.skip(true, 'Set RUN_UI_LOGIN_TEST=true to run the external demo-site login test.');
+      return;
+    }
+
     const email = process.env.LOGIN_EMAIL;
     const password = process.env.LOGIN_PASSWORD;
     if (!email || !password) {
-      test.skip(true, 'Set LOGIN_EMAIL and LOGIN_PASSWORD to run the login test.');
+      test.skip(true, 'RUN_UI_LOGIN_TEST is enabled; configure LOGIN_EMAIL and LOGIN_PASSWORD for a valid BASE_URL account.');
       return;
     }
 

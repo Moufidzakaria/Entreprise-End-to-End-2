@@ -202,9 +202,10 @@ ZAP jobs run independently. These pipelines run CI checks; they do not deploy
 the test framework or application to Azure. Generated reports are published as
 pipeline artifacts rather than committed to the repository.
 
-The login test runs only when `LOGIN_EMAIL` and `LOGIN_PASSWORD` are available;
-without them, Playwright reports that test as skipped and continues with the
-other tests and the independent ZAP job. These must be credentials for an
+The external UI-login test is opt-in because it depends on an account on a
+public demo website. By default, CI skips it and continues with the other tests
+and independent ZAP job. To run it, set `RUN_UI_LOGIN_TEST=true` and provide
+`LOGIN_EMAIL` and `LOGIN_PASSWORD`. These must be credentials for an
 existing account on the UI test site configured by `BASE_URL`
 (`https://automationexercise.com` by default); credentials for the separate
 Practice Software Testing API are not valid for this UI login. Configure the
@@ -215,17 +216,19 @@ provider are not shared with another:
   → Actions**, create repository secrets named `LOGIN_EMAIL` and
   `LOGIN_PASSWORD`, then rerun the workflow.
 * **Azure DevOps:** add `LOGIN_EMAIL` and `LOGIN_PASSWORD` as secret pipeline
-  variables (or in a linked variable group). Without them, the login test is
-  skipped and the independent ZAP job still runs.
+  variables (or in a linked variable group), and set the non-secret pipeline
+  variable `RUN_UI_LOGIN_TEST` to `true`. By default this variable is `false`.
 * **Jenkins:** create Secret text credentials with the IDs
   `playwright-login-email` and `playwright-login-password`.
 
 Do not commit credentials or `.env` files. CI reads credentials only from
 pipeline secrets; local `.env` files are loaded only for non-CI runs.
 
-The successful API-login test is separate from the UI-login test. It runs only
-when `API_LOGIN_EMAIL` and `API_LOGIN_PASSWORD` are configured as secrets for a
-valid Practice Software Testing API account. A `401 Unauthorized` response
+The successful API-login test is separate from the UI-login test and is also
+opt-in: set `RUN_API_LOGIN_TEST=true` and configure `API_LOGIN_EMAIL` and
+`API_LOGIN_PASSWORD` as secrets for a valid Practice Software Testing API
+account. By default this test is skipped because the public demo API can lock
+accounts. A `401 Unauthorized` response
 means the API rejected the submitted credentials; do not treat it as a
 successful login. Without these API secrets, the positive API-login test is
 skipped while the invalid-credentials test continues to verify rejection.
@@ -235,9 +238,10 @@ login test indicates the configured API account is locked; use an unlocked
 test account before rerunning.
 In Azure DevOps, add `API_LOGIN_EMAIL` and `API_LOGIN_PASSWORD` as secret
 variables under **Pipelines → Edit → Variables** (or in a linked variable
-group). In GitHub Actions, add them under **Settings → Secrets and variables
-→ Actions**. These API credentials are separate from the UI `LOGIN_EMAIL` and
-`LOGIN_PASSWORD` secrets.
+group), and set the non-secret `RUN_API_LOGIN_TEST` variable to `true`. In
+GitHub Actions, configure the API credentials under **Settings → Secrets and
+variables → Actions** and edit the workflow opt-in flag when you want to run
+the test. These API credentials are separate from the UI login secrets.
 
 Some UI and API tests depend on public demo services. If those services return
 HTTP 429 or 5xx, or display their queue-full page, the affected test is reported

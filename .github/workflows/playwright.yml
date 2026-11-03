@@ -41,6 +41,8 @@ jobs:
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
           API_LOGIN_EMAIL: ${{ secrets.API_LOGIN_EMAIL }}
           API_LOGIN_PASSWORD: ${{ secrets.API_LOGIN_PASSWORD }}
+          RUN_UI_LOGIN_TEST: 'false'
+          RUN_API_LOGIN_TEST: 'false'
           CI: 'true'
         run: npm run test:ci
 
