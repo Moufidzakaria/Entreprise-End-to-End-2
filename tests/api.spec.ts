@@ -51,4 +51,27 @@ test.describe('API Testing - Toolshop Backend Validation', () => {
     // The test API may lock the account after repeated invalid login attempts.
     expect([401, 403, 422, 423]).toContain(response.status());
   });
+
+  test('POST /users/login - Should authenticate with valid credentials', async ({ request }) => {
+    const email = process.env.API_LOGIN_EMAIL;
+    const password = process.env.API_LOGIN_PASSWORD;
+    if (!email || !password) {
+      test.skip(true, 'Set API_LOGIN_EMAIL and API_LOGIN_PASSWORD to test successful API login.');
+      return;
+    }
+
+    const response = await request.post('https://api.practicesoftwaretesting.com/users/login', {
+      data: { email, password },
+    });
+    skipIfServiceUnavailable(response.status());
+
+    expect(
+      response.status(),
+      'API login failed. Verify API_LOGIN_EMAIL and API_LOGIN_PASSWORD are valid for Practice Software Testing.',
+    ).toBe(200);
+
+    const responseBody = await response.json();
+    expect(responseBody.access_token).toEqual(expect.any(String));
+    expect(responseBody.access_token.length).toBeGreaterThan(0);
+  });
 });

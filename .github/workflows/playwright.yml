@@ -39,6 +39,8 @@ jobs:
           BASE_URL: ${{ vars.BASE_URL || 'https://automationexercise.com' }}
           LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL }}
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+          API_LOGIN_EMAIL: ${{ secrets.API_LOGIN_EMAIL }}
+          API_LOGIN_PASSWORD: ${{ secrets.API_LOGIN_PASSWORD }}
           CI: 'true'
         run: npx playwright test
 

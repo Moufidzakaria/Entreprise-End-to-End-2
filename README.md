@@ -209,6 +209,18 @@ provider are not shared with another:
 Do not commit credentials or `.env` files. CI reads credentials only from
 pipeline secrets; local `.env` files are loaded only for non-CI runs.
 
+The successful API-login test is separate from the UI-login test. It runs only
+when `API_LOGIN_EMAIL` and `API_LOGIN_PASSWORD` are configured as secrets for a
+valid Practice Software Testing API account. A `401 Unauthorized` response
+means the API rejected the submitted credentials; do not treat it as a
+successful login. Without these API secrets, the positive API-login test is
+skipped while the invalid-credentials test continues to verify rejection.
+In Azure DevOps, add `API_LOGIN_EMAIL` and `API_LOGIN_PASSWORD` as secret
+variables under **Pipelines → Edit → Variables** (or in a linked variable
+group). In GitHub Actions, add them under **Settings → Secrets and variables
+→ Actions**. These API credentials are separate from the UI `LOGIN_EMAIL` and
+`LOGIN_PASSWORD` secrets.
+
 Some UI and API tests depend on public demo services. If those services return
 HTTP 429 or 5xx, or display their queue-full page, the affected test is reported
 as skipped rather than timing out; inspect the Playwright report and rerun when

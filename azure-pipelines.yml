@@ -38,6 +38,8 @@ jobs:
           BASE_URL: $(BASE_URL)
           LOGIN_EMAIL: $[variables['LOGIN_EMAIL']]
           LOGIN_PASSWORD: $[variables['LOGIN_PASSWORD']]
+          API_LOGIN_EMAIL: $[variables['API_LOGIN_EMAIL']]
+          API_LOGIN_PASSWORD: $[variables['API_LOGIN_PASSWORD']]
           CI: $(CI)
 
       - task: PublishTestResults@2
