@@ -12,7 +12,7 @@ variables:
   BASE_URL: 'https://automationexercise.com'
   CI: 'true'
   NODE_VERSION: '20.x'
-  RUN_UI_LOGIN_TEST: 'false'
+  RUN_UI_LOGIN_TEST: 'true'
   RUN_API_LOGIN_TEST: 'false'
 
 jobs:

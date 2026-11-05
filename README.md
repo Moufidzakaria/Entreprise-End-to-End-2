@@ -202,10 +202,9 @@ ZAP jobs run independently. These pipelines run CI checks; they do not deploy
 the test framework or application to Azure. Generated reports are published as
 pipeline artifacts rather than committed to the repository.
 
-The external UI-login test is opt-in because it depends on an account on a
-public demo website. By default, CI skips it and continues with the other tests
-and independent ZAP job. To run it, set `RUN_UI_LOGIN_TEST=true` and provide
-`LOGIN_EMAIL` and `LOGIN_PASSWORD`. These must be credentials for an
+The UI-login test depends on an account on a public demo website. Both CI
+pipelines enable it by default and skip it if `LOGIN_EMAIL` and
+`LOGIN_PASSWORD` are not configured. These must be credentials for an
 existing account on the UI test site configured by `BASE_URL`
 (`https://automationexercise.com` by default); credentials for the separate
 Practice Software Testing API are not valid for this UI login. Configure the
@@ -216,8 +215,10 @@ provider are not shared with another:
   → Actions**, create repository secrets named `LOGIN_EMAIL` and
   `LOGIN_PASSWORD`, then rerun the workflow.
 * **Azure DevOps:** add `LOGIN_EMAIL` and `LOGIN_PASSWORD` as secret pipeline
-  variables (or in a linked variable group), and set the non-secret pipeline
-  variable `RUN_UI_LOGIN_TEST` to `true`. By default this variable is `false`.
+  variables (or in a linked variable group). The pipeline sets
+  `RUN_UI_LOGIN_TEST=true` by default. If a pipeline UI variable with the same
+  name already exists, change it to `true` or remove it so it does not override
+  the YAML value.
 * **Jenkins:** create Secret text credentials with the IDs
   `playwright-login-email` and `playwright-login-password`.
 
